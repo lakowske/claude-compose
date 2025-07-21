@@ -1,10 +1,18 @@
-# Unified - Management Application (Version 6)
+# FastAPI MVC CRUD Application - Implementation Prompt (Version 7)
 
-Create tech specs and implement "Unified", a complete professional management application using Python, FastAPI and SQLAlchemy with idiomatic FastAPI project structure and polished Bootstrap UI.
+Create tech specs and implement a complete MVC CRUD application using Python, FastAPI and SQLAlchemy with idiomatic FastAPI project structure.
 
 ## Key Requirements:
 
-### 1. **Authentication & Authorization**:
+### 1. **Model Discovery & Schema Review**:
+
+- **IMPORTANT**: Review the `migrations/` directory for existing database schema definitions
+- Identify and implement models for all tables found in the migration files (in addition to core auth models)
+- Use existing schema definitions as the source of truth for model structure and relationships
+- Ensure all discovered models are properly integrated into the CRUD application
+- Create complete CRUD interfaces for all discovered models with appropriate permissions
+
+### 2. **Authentication & Authorization**:
 
 - **IMPORTANT**: Use dependency injection for authentication, NOT middleware (FastAPI middleware can cause routing conflicts)
 - Implement Role Based Access Control with fine-grain permissions
@@ -12,14 +20,15 @@ Create tech specs and implement "Unified", a complete professional management ap
   - `all` - perform action on all records
   - `own` - perform action only on records owned by the user
   - `group` - perform action on records owned by user's group(s)
-- Admin role permissions: user:create:all, user:read:all, user:update:all, user:delete:all, role:read:all, permission:read:all, session:read:all
-- Regular user role permissions: user:read:own, user:update:own
+- Admin role permissions: ALL models with full CRUD permissions (create:all, read:all, update:all, delete:all)
+- Regular user role permissions: user:read:own, user:update:own, plus appropriate permissions for owned records
 - **PUBLIC ACCESS**: Include user registration functionality (no authentication required)
 - Design to allow future JWT token support
 
-### 2. **Database & Models**:
+### 3. **Database & Models**:
 
-- Create SQLAlchemy models for users, roles, permissions, and sessions only
+- Create SQLAlchemy models based on discovered schema in `migrations/`
+- **REQUIRED MODELS**: users, roles, permissions, sessions, plus all additional models found in migration files
 - **CRITICAL**: Use explicit foreign_keys in relationships to avoid conflicts:
 
   ```python
@@ -37,11 +46,9 @@ Create tech specs and implement "Unified", a complete professional management ap
 - Permission model should store the three-part format: model, action, scope
 - **IMPORTANT**: Use timezone-aware datetime objects consistently (datetime.now(timezone.utc))
 
-### 3. **Project Structure (Idiomatic FastAPI)**:
+### 4. **Project Structure (Idiomatic FastAPI)**:
 
 ```
-.venv/                         # Virtual environment (created by python -m venv .venv)
-pyproject.toml                 # Modern Python project configuration and dependencies
 app/
 ├── __init__.py
 ├── main.py                    # FastAPI app creation and configuration
@@ -55,13 +62,15 @@ app/
 │   ├── user.py
 │   ├── role.py
 │   ├── permission.py
-│   └── session.py
+│   ├── session.py
+│   └── [additional models]   # Models discovered from migrations/
 ├── schemas/                   # Pydantic models for request/response validation
 │   ├── __init__.py
 │   ├── user.py               # UserCreate, UserUpdate, UserResponse
 │   ├── role.py               # RoleCreate, RoleUpdate, RoleResponse
 │   ├── permission.py         # PermissionCreate, PermissionUpdate, PermissionResponse
 │   ├── session.py            # SessionResponse
+│   ├── [additional schemas]  # Schemas for discovered models
 │   └── auth.py               # LoginRequest, RegisterRequest, AuthResponse
 ├── crud/                      # Database operations (separate from routes)
 │   ├── __init__.py
@@ -69,7 +78,8 @@ app/
 │   ├── user.py               # User CRUD operations
 │   ├── role.py               # Role CRUD operations
 │   ├── permission.py         # Permission CRUD operations
-│   └── session.py            # Session CRUD operations
+│   ├── session.py            # Session CRUD operations
+│   └── [additional crud]     # CRUD operations for discovered models
 ├── api/                       # JSON API routes
 │   ├── __init__.py
 │   ├── deps.py               # Dependencies (auth, db session, permissions)
@@ -82,15 +92,16 @@ app/
 │           ├── users.py      # User CRUD endpoints
 │           ├── roles.py      # Role CRUD endpoints
 │           ├── permissions.py # Permission CRUD endpoints
-│           └── sessions.py   # Session CRUD endpoints
+│           ├── sessions.py   # Session CRUD endpoints
+│           └── [additional endpoints] # Endpoints for discovered models
 ├── routers/                   # HTML routes (using Jinja2 templates)
 │   ├── __init__.py
 │   └── html.py               # All HTML routes for web interface
-├── templates/                 # Jinja2 templates with Bootstrap UI
-│   ├── base.html              # Professional Bootstrap base template with Unified branding
-│   ├── login.html             # Polished login form with Bootstrap styling
-│   ├── register.html          # Professional registration form
-│   ├── dashboard.html         # Clean dashboard with Bootstrap cards and layouts
+├── templates/                 # Jinja2 templates (moved to app root)
+│   ├── base.html
+│   ├── login.html
+│   ├── register.html
+│   ├── dashboard.html
 │   ├── users/
 │   │   ├── list.html
 │   │   ├── detail.html
@@ -103,29 +114,26 @@ app/
 │   │   ├── list.html
 │   │   ├── detail.html
 │   │   └── form.html
-│   └── sessions/
+│   ├── sessions/
+│   │   ├── list.html
+│   │   └── detail.html
+│   └── [additional templates]/ # Templates for discovered models
 │       ├── list.html
-│       └── detail.html
+│       ├── detail.html
+│       └── form.html
 ├── utils/                     # Utility functions
 │   ├── __init__.py
 │   └── permissions.py        # Permission checking helpers
 ├── static/                    # Static files (CSS/JS/images)
 │   ├── css/
-│   │   ├── unified.css        # Custom Unified branding and theme
-│   │   └── bootstrap.min.css  # Bootstrap 5.3+ framework
 │   ├── js/
-│   │   ├── unified.js         # Custom JavaScript for enhanced UX
-│   │   └── bootstrap.bundle.min.js # Bootstrap JavaScript
 │   └── images/
-│       ├── unified-logo.png   # Unified brand logo
-│       └── favicon.ico        # Professional favicon
 ├── init_db.py                # Database initialization script
 ├── run_server.py             # Uvicorn startup script with --reload
-├── supervisord.conf          # Supervisor configuration for process management
-└── requirements.txt          # Generated from pyproject.toml for deployment compatibility
+└── supervisord.conf          # Supervisor configuration for process management
 ```
 
-### 4. **Technical Specifications**:
+### 5. **Technical Specifications**:
 
 - Use Pydantic v2 for request/response validation
 - **IMPORTANT**: Add pydantic-settings for configuration management
@@ -135,14 +143,10 @@ app/
 - Support URL_PREFIX environment variable for reverse proxy deployment
 - Use python-dotenv for environment variables
 - **PORT CONFIGURATION**: Use CLAUDE_INTERNAL_PORT environment variable instead of hardcoded ports
-- **VIRTUAL ENVIRONMENT**: Use `.venv` virtual environment for isolated dependencies
-- **DEPENDENCY MANAGEMENT**: Use `pyproject.toml` for modern Python dependency management
-- **REQUIRED DEPENDENCIES**: Configure in pyproject.toml:
-  - Production: fastapi, sqlalchemy, psycopg2-binary, uvicorn, pydantic, pydantic-settings, python-jose, passlib, bcrypt, python-multipart, jinja2, python-dotenv, email-validator, supervisor
-  - **UI FRAMEWORK**: Bootstrap 5.3+ for professional, responsive design with modern components
-  - Development: ruff (for linting and formatting), pytest (for testing)
+- Required dependencies: python3-venv, fastapi, sqlalchemy, psycopg2-binary, uvicorn, pydantic, pydantic-settings, python-jose, passlib, bcrypt, python-multipart, jinja2, python-dotenv, email-validator, supervisor
+- Development dependencies: ruff (for linting and formatting)
 
-### 5. **Implementation Details**:
+### 6. **Implementation Details**:
 
 - **Separation of Concerns**: Keep routes, business logic, and data access separate
   - `api/` and `routers/` - Route definitions only
@@ -153,30 +157,15 @@ app/
 - Add CORS middleware configuration
 - Create utility functions for permission checking
 - Use async/await patterns consistently
-- **PROFESSIONAL UI**: Implement polished Bootstrap 5.3+ interface with:
-  - Modern responsive design and professional color scheme
-  - Clean typography and consistent spacing
-  - Professional form styling with validation feedback
-  - Loading states, success/error notifications
-  - Mobile-friendly navigation and layouts
-- Include HTML forms with CSRF protection and Bootstrap styling
-- Configure ruff for code linting and formatting in pyproject.toml configuration
+- Include basic HTML forms with CSRF protection
+- Configure ruff for code linting and formatting (include ruff.toml or pyproject.toml configuration)
 - **IMPORTANT**: Create database initialization script with default data
 - **USER REGISTRATION**: Implement public registration form that assigns default "user" role
-- **ADMIN TABLES**: Create full CRUD interfaces for roles, permissions, and sessions (admin access only)
-- **PROFESSIONAL BRANDING**: Implement "Unified" branding throughout:
-  - Professional logo and brand colors
-  - Consistent typography and spacing
-  - Clean, modern Bootstrap 5.3+ design system
-  - Responsive layouts for desktop, tablet, and mobile
-- **NAVIGATION**: Add professional Bootstrap navigation with:
-  - Unified brand logo and name in navbar
-  - Conditional links based on user permissions
-  - Mobile-responsive hamburger menu
-  - User profile dropdown with logout option
+- **ADMIN TABLES**: Create full CRUD interfaces for ALL models (admin access only for system models)
+- **NAVIGATION**: Add navigation menu with conditional links based on user permissions
 - **DEVELOPMENT SCRIPT**: Create `run_server.py` script that starts uvicorn with --reload for fast development iterations
 
-### 6. **Dependency Injection Pattern**:
+### 7. **Dependency Injection Pattern**:
 
 - **Centralized Dependencies** in `api/deps.py`:
 
@@ -201,7 +190,7 @@ app/
       return dependency
   ```
 
-### 7. **Form Handling (Critical for HTML Interface)**:
+### 8. **Form Handling (Critical for HTML Interface)**:
 
 - **IMPORTANT**: Use `await request.form()` for complex form processing
 - **IMPORTANT**: Handle multiple select values with `form_data.getlist("field_name")`
@@ -217,17 +206,17 @@ app/
   - POST /model/{id} (update)
   - DELETE /model/{id} (delete)
 
-### 8. **Database Setup**:
+### 9. **Database Setup**:
 
 - **CRITICAL**: Include database creation step before running initialization
 - Create initialization script that sets up:
-  - Default permissions for all model:action:scope combinations (user, role, permission, session)
+  - Default permissions for ALL discovered models with all action:scope combinations
   - Admin and user roles with appropriate permissions
   - Default admin user (admin/admin123) and demo user (demo/demo123)
   - Assign default "user" role to new registrations
 - Handle database connection gracefully with proper error messages
 
-### 8.1. **Development Server Management with Supervisor**:
+### 9.1. **Development Server Management with Supervisor**:
 
 - **IMPORTANT**: Create supervisor configuration to manage uvicorn server:
   - Use supervisor to control uvicorn process with `--reload` flag
@@ -275,68 +264,12 @@ from pathlib import Path
 
 def manage_server(action="start"):
     """Manage uvicorn server via supervisor"""
-    # Ensure .venv is activated
     # Load environment variables
     # Initialize database if needed
     # Control supervisor process
     # Handle start/stop/restart/status commands
     # Show logs when requested
 ```
-
-### 9. **Python Environment & Dependency Management**:
-
-- **VIRTUAL ENVIRONMENT SETUP** (CRITICAL):
-  ```bash
-  python -m venv .venv
-  source .venv/bin/activate  # On Linux/Mac
-  # .venv\Scripts\activate     # On Windows
-  ```
-  
-  **IMPORTANT**: Always activate the virtual environment before installing any packages. Never install project dependencies globally as this can break system packages and cause conflicts.
-
-- **PYPROJECT.TOML CONFIGURATION**: Create comprehensive pyproject.toml:
-  ```toml
-  [build-system]
-  requires = ["setuptools>=45", "wheel"]
-  build-backend = "setuptools.build_meta"
-
-  [project]
-  name = "unified-management"
-  version = "1.0.0"
-  description = "Unified Management Application"
-  dependencies = [
-      "fastapi>=0.100.0",
-      "sqlalchemy>=2.0.0",
-      "psycopg2-binary",
-      "uvicorn[standard]",
-      "pydantic>=2.0.0",
-      "pydantic-settings",
-      "python-jose[cryptography]",
-      "passlib[bcrypt]",
-      "python-multipart",
-      "jinja2",
-      "python-dotenv",
-      "email-validator",
-      "supervisor"
-  ]
-
-  [project.optional-dependencies]
-  dev = [
-      "ruff",
-      "pytest",
-      "pytest-asyncio"
-  ]
-
-  [tool.ruff]
-  line-length = 88
-  target-version = "py311"
-  ```
-
-- **INSTALLATION COMMANDS**:
-  ```bash
-  pip install -e .
-  pip install -e .[dev]  # For development dependencies
-  ```
 
 ### 10. **Configuration Management**:
 
@@ -359,36 +292,46 @@ POST /register             # Process registration (public access)
 POST /logout               # Logout user
 
 # Users
-GET  /users                # List users (permission: user:read:all or user:read:own)
+GET  /users                # List users
 GET  /users/{id}           # View user detail
-GET  /users/new            # New user form (permission: user:create:all)
+GET  /users/new            # New user form
 POST /users                # Create user
 GET  /users/{id}/edit      # Edit user form
-POST /users/{id}           # Update user (use POST, not PUT for HTML forms)
+POST /users/{id}           # Update user
 DELETE /users/{id}         # Delete user
 
 # Roles (admin only)
-GET  /roles                # List roles (permission: role:read:all)
+GET  /roles                # List roles
 GET  /roles/{id}           # View role detail
 GET  /roles/new            # New role form
 POST /roles                # Create role
 GET  /roles/{id}/edit      # Edit role form
-POST /roles/{id}           # Update role (use POST, not PUT for HTML forms)
+POST /roles/{id}           # Update role
 DELETE /roles/{id}         # Delete role
 
 # Permissions (admin only)
-GET  /permissions          # List permissions (permission: permission:read:all)
+GET  /permissions          # List permissions
 GET  /permissions/{id}     # View permission detail
 GET  /permissions/new      # New permission form
 POST /permissions          # Create permission
 GET  /permissions/{id}/edit # Edit permission form
-POST /permissions/{id}     # Update permission (use POST, not PUT for HTML forms)
+POST /permissions/{id}     # Update permission
 DELETE /permissions/{id}   # Delete permission
 
 # Sessions (admin only)
-GET  /sessions             # List sessions (permission: session:read:all)
+GET  /sessions             # List sessions
 GET  /sessions/{id}        # View session detail
 DELETE /sessions/{id}      # Delete session
+
+# Additional Models (discovered from migrations/)
+# Complete CRUD routes for each discovered model following the pattern:
+GET  /model_name           # List records
+GET  /model_name/{id}      # View record detail
+GET  /model_name/new       # New record form
+POST /model_name           # Create record
+GET  /model_name/{id}/edit # Edit record form
+POST /model_name/{id}      # Update record
+DELETE /model_name/{id}    # Delete record
 ```
 
 **JSON API Routes (in `api/v1/endpoints/`):**
@@ -415,69 +358,47 @@ GET|PUT|DELETE /api/v1/permissions/{id} # Get/Update/Delete permission (admin on
 # Sessions (api/v1/endpoints/sessions.py)
 GET|DELETE /api/v1/sessions   # List/Delete sessions (admin only)
 GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
+
+# Additional Models (api/v1/endpoints/[model_name].py)
+# Complete API endpoints for each discovered model following the pattern:
+GET|POST /api/v1/model_name   # List/Create records
+GET|PUT|DELETE /api/v1/model_name/{id} # Get/Update/Delete record
 ```
 
-### 12. **Professional UI Design & Branding**:
-
-- **Bootstrap Integration**: Use Bootstrap 5.3+ for professional, enterprise-grade design:
-  - Modern card-based layouts for data presentation
-  - Professional form styling with proper validation feedback
-  - Responsive grid system for all screen sizes
-  - Loading spinners and progress indicators
-  - Toast notifications for user feedback
-  - Modal dialogs for confirmations and forms
-
-- **Unified Brand Identity**:
-  - Professional logo and consistent color scheme
-  - Typography hierarchy with clean, readable fonts
-  - Consistent spacing and component styling
-  - Professional error pages (404, 500, etc.)
-  - Polished login/registration experience
-
-- **User Experience Enhancements**:
-  - Loading states for all async operations
-  - Success/error feedback with Bootstrap alerts
-  - Breadcrumb navigation for complex workflows
-  - Pagination for large data sets
-  - Search and filter capabilities with clean UI
-  - Professional table styling with sorting indicators
-
-### 13. **Documentation**:
+### 12. **Documentation**:
 
 - Create comprehensive tech specs document including:
-  - Complete database schema with SQL examples
+  - Complete database schema with SQL examples for ALL models
   - Authentication/authorization flow diagrams
-  - API endpoints (both HTML and JSON) with examples for all models
+  - API endpoints (both HTML and JSON) with examples for ALL models
   - User registration flow and default role assignment
-  - Admin interface documentation for managing roles, permissions, and sessions
-  - **UI/UX Guidelines**: Bootstrap component usage and Unified branding standards
+  - Admin interface documentation for managing ALL system models
   - Deployment configuration instructions
   - Error handling strategies
   - Future JWT migration path
 - Include example .env file with all required variables
 - Document default user accounts and permissions
 
-### 14. **Testing & Validation**:
+### 13. **Testing & Validation**:
 
 - **MUST INCLUDE**: After implementation, test the following:
-  - Database connection and table creation
+  - Database connection and table creation for ALL models
   - User authentication (both API and HTML)
   - **User registration functionality** (public access)
   - Permission enforcement (admin vs regular user)
-  - CRUD operations for all models (users, roles, permissions, sessions)
-  - **Admin table access** (roles, permissions, sessions management)
+  - CRUD operations for ALL models (both core auth models and all models discovered from migrations/)
+  - **Admin table access** (system model management)
   - Session management and expiration
   - **Navigation menu** with proper permission-based visibility
-- Provide curl commands for testing API endpoints for all models
-- Verify HTML interface functionality for all implemented features
+- Provide curl commands for testing API endpoints for ALL models
+- Verify HTML interface functionality for ALL implemented features
 
-### 15. **Common Pitfalls to Avoid**:
+### 14. **Common Pitfalls to Avoid**:
 
-- **Virtual Environment**: Always activate .venv before installing dependencies - never install packages globally as this breaks system packages
 - **SQLAlchemy Relationships**: Always use explicit foreign_keys to avoid circular references
 - **FastAPI Middleware**: Use dependency injection instead of custom middleware for authentication
 - **Form Handling**: Use `await request.form()` and `getlist()` for complex forms
-- **Route Completeness**: Ensure ALL CRUD operations have corresponding HTML routes
+- **Route Completeness**: Ensure ALL CRUD operations have corresponding HTML routes for ALL models
 - **422 Errors**: Handle Pydantic validation properly with `extra="ignore"` in model_config
 - **Import Organization**: Keep imports clean with proper module organization
 - **Template Paths**: Update template paths to reflect new `templates/` location
@@ -488,20 +409,16 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 - **Database Creation**: Ensure database exists before running migrations
 - **Session Security**: Use proper session validation and cleanup
 
-### 16. **Delivery Requirements**:
+### 15. **Delivery Requirements**:
 
-- Complete working "Unified" application with professional Bootstrap UI and database initialized
-- All endpoints tested and functional for all models (users, roles, permissions, sessions)
-- Both HTML and API interfaces working with polished Bootstrap design
-- **Professional Interface**: Clean, responsive Bootstrap 5.3+ design throughout all pages
-- **Unified Branding**: Consistent brand identity, logo, colors, and typography
-- **Public user registration** functional and assigning default role with professional UI
-- **Admin interfaces** for all system tables with proper permission checks and Bootstrap styling
-- Permission system fully operational with professional navigation menu
-- **Mobile Responsive**: All interfaces work seamlessly on desktop, tablet, and mobile devices
+- Complete working application with database initialized
+- All endpoints tested and functional for ALL models
+- Both HTML and API interfaces working
+- **Public user registration** functional and assigning default role
+- **Admin interfaces** for all system tables with proper permission checks
+- **Business data interfaces** for all models discovered from migrations/
+- Permission system fully operational with navigation menu
 - Clear documentation of how to run and test the application
-- **Python Environment**: Properly configured .venv virtual environment with all dependencies installed via pyproject.toml
-- **Modern Dependency Management**: Complete pyproject.toml configuration with production and development dependencies
 - **Development script** (`run_server.py`) with supervisor management for robust server control
 - **Supervisor configuration** (`supervisord.conf`) for process management and auto-reload
 - **API versioning** properly implemented with `/api/v1/` prefix
@@ -530,32 +447,27 @@ Keep implementation focused on core functionality, avoiding test suites or mocks
 1. Application starts without errors
 2. **Public user registration** works and assigns default "user" role
 3. Admin user can login and access all system tables (users, roles, permissions, sessions)
-4. Regular user can login and see only their own data
-5. All CRUD operations work via API and HTML for all models
+4. Regular user can login and see appropriate data based on permissions
+5. All CRUD operations work via API and HTML for ALL models
 6. **Navigation menu** shows appropriate links based on user permissions
-7. Permission system correctly enforces access controls across all models
+7. Permission system correctly enforces access controls across ALL models
 8. Session management works properly
-9. **Admin interface** allows full management of roles, permissions, and sessions
-10. Application is ready for production deployment
-11. **API endpoints** are properly versioned under `/api/v1/`
-12. **Project structure** follows FastAPI community standards
+9. **Admin interface** allows full management of all system models
+10. **Business data interface** allows management of all models discovered from migrations/
+11. Application is ready for production deployment
+12. **API endpoints** are properly versioned under `/api/v1/`
+13. **Project structure** follows FastAPI community standards
 
-## Key Improvements in Version 6:
+## Key Improvements in Version 7:
 
-- **Modern Python Project Structure**: Uses .venv virtual environment and pyproject.toml for dependency management
-- **Professional "Unified" Branding**: Complete brand identity with professional logo, colors, and typography
-- **Bootstrap 5.3+ Integration**: Modern, responsive UI framework for enterprise-grade appearance
-- **Polished User Experience**: Professional forms, navigation, notifications, and mobile responsiveness
-- **Idiomatic FastAPI structure** following community standards and documentation
-- **Clear separation of concerns** with dedicated `crud/`, `schemas/`, and `api/` directories
-- **API versioning** with proper `/api/v1/` structure for future extensibility
-- **Centralized dependency injection** in `api/deps.py` for better organization
-- **Improved template organization** with templates at app root level
-- **Enhanced maintainability** through proper layering and module organization
-- **Better scalability** with clear boundaries between components
-- **Industry standard patterns** making it easier for new developers to contribute
+- **Schema Discovery**: Reviews existing migration files to identify required models
+- **Extended Model Support**: Includes all models discovered from existing migrations/
+- **Complete CRUD Coverage**: Ensures all discovered models have full CRUD interfaces
+- **Enhanced Permission System**: Supports permissions for all model types
+- **Comprehensive Documentation**: Covers all models in API and HTML interfaces
+- **Business Data Management**: Provides interfaces for managing business-critical data
+- **Migration Integration**: Uses existing schema definitions as source of truth
 - **Supervisor Integration**: Uses supervisor for robust process management with auto-reload
 - **Development Script**: Enhanced `run_server.py` with supervisor control and process management
-- **Professional Static Assets**: Custom CSS, JavaScript, and branding assets for polished appearance
 
-This prompt incorporates all lessons learned from previous implementations plus FastAPI community best practices and professional UI/UX design for maximum usability, maintainability, and visual appeal.
+This prompt incorporates schema discovery and extends the application to support additional business models while maintaining all FastAPI best practices and security features from previous versions.

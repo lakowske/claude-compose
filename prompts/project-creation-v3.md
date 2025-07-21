@@ -25,6 +25,7 @@ Create a docker compose file that includes:
 - Mount ./workspace to /workspace (version-specific workspace)
 - Set working directory to /workspace
 - Copy ./prompts directory to ./workspace/prompts (making prompts available in container)
+- Copy ./migrations2 directory to ./workspace/migrations2 (if migrations2/ exists, making migrations available in container)
 - Create .env file in ./workspace with postgres connection URL and port information
 
 **Networking:**
