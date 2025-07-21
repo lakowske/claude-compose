@@ -9,10 +9,12 @@ Create a docker compose file that includes:
 **Claude Container Setup:**
 
 - Container named "claude" built from debian:bookworm-slim
-- Install: curl, ca-certificates, tmux, nano, emacs, python3, python3-pip, postgresql-client
+- Install: curl, ca-certificates, tmux, nano, emacs, python3, python3-pip, postgresql-client, sudo
 - Install Node.js LTS and npm via NodeSource repository
 - Install claude code: `npm install -g @anthropic-ai/claude-code`
 - Install Python tools: `pip3 install --break-system-packages uv ruff`
+- Create user "claude" with home directory
+- Add claude user to sudo group with NOPASSWD access: `echo 'claude ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers`
 - Create directory /workspace owned by claude:claude
 
 **Directory Structure:**
