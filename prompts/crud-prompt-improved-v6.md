@@ -40,8 +40,6 @@ Create tech specs and implement "Unified", a complete professional management ap
 ### 3. **Project Structure (Idiomatic FastAPI)**:
 
 ```
-.venv/                         # Virtual environment (created by python -m venv .venv)
-pyproject.toml                 # Modern Python project configuration and dependencies
 app/
 ├── __init__.py
 ├── main.py                    # FastAPI app creation and configuration
@@ -120,8 +118,11 @@ app/
 │       ├── unified-logo.png   # Unified brand logo
 │       └── favicon.ico        # Professional favicon
 ├── init_db.py                # Database initialization script
-├── run_server.py             # Uvicorn startup script with --reload
 ├── supervisord.conf          # Supervisor configuration for process management
+├── logs/                      # Supervisor and application log files
+│   ├── supervisord.log       # Supervisor daemon log
+│   ├── uvicorn.out.log       # Uvicorn stdout log
+│   └── uvicorn.err.log       # Uvicorn stderr log
 └── requirements.txt          # Generated from pyproject.toml for deployment compatibility
 ```
 
@@ -135,12 +136,9 @@ app/
 - Support URL_PREFIX environment variable for reverse proxy deployment
 - Use python-dotenv for environment variables
 - **PORT CONFIGURATION**: Use CLAUDE_INTERNAL_PORT environment variable instead of hardcoded ports
-- **VIRTUAL ENVIRONMENT**: Use `.venv` virtual environment for isolated dependencies
-- **DEPENDENCY MANAGEMENT**: Use `pyproject.toml` for modern Python dependency management
-- **REQUIRED DEPENDENCIES**: Configure in pyproject.toml:
-  - Production: fastapi, sqlalchemy, psycopg2-binary, uvicorn, pydantic, pydantic-settings, python-jose, passlib, bcrypt, python-multipart, jinja2, python-dotenv, email-validator, supervisor
-  - **UI FRAMEWORK**: Bootstrap 5.3+ for professional, responsive design with modern components
-  - Development: ruff (for linting and formatting), pytest (for testing)
+- Required dependencies: python3-venv, fastapi, sqlalchemy, psycopg2-binary, uvicorn, pydantic, pydantic-settings, python-jose, passlib, bcrypt, python-multipart, jinja2, python-dotenv, email-validator, supervisor
+- **UI FRAMEWORK**: Bootstrap 5.3+ for professional, responsive design with modern components
+- Development dependencies: ruff (for linting and formatting)
 
 ### 5. **Implementation Details**:
 
@@ -160,7 +158,7 @@ app/
   - Loading states, success/error notifications
   - Mobile-friendly navigation and layouts
 - Include HTML forms with CSRF protection and Bootstrap styling
-- Configure ruff for code linting and formatting in pyproject.toml configuration
+- Configure ruff for code linting and formatting (include ruff.toml or pyproject.toml configuration)
 - **IMPORTANT**: Create database initialization script with default data
 - **USER REGISTRATION**: Implement public registration form that assigns default "user" role
 - **ADMIN TABLES**: Create full CRUD interfaces for roles, permissions, and sessions (admin access only)
@@ -174,7 +172,7 @@ app/
   - Conditional links based on user permissions
   - Mobile-responsive hamburger menu
   - User profile dropdown with logout option
-- **DEVELOPMENT SCRIPT**: Create `run_server.py` script that starts uvicorn with --reload for fast development iterations
+- **SUPERVISOR MANAGEMENT**: Use supervisor directly to manage uvicorn with --reload for fast development iterations
 
 ### 6. **Dependency Injection Pattern**:
 
@@ -239,106 +237,58 @@ app/
 - **IMPORTANT**: Create `supervisord.conf` configuration file:
 ```ini
 [supervisord]
-nodaemon=true
-user=root
-logfile=/var/log/supervisord.log
-pidfile=/var/run/supervisord.pid
+nodaemon=false
+logfile=./logs/supervisord.log
+pidfile=./logs/supervisord.pid
+childlogdir=./logs
+logfile_maxbytes=50MB
+logfile_backups=10
+loglevel=info
 
 [program:uvicorn]
-command=uvicorn app.main:app --host 0.0.0.0 --port %(ENV_CLAUDE_INTERNAL_PORT)s --reload
+command=/workspace/.venv/bin/uvicorn app.main:app --host 0.0.0.0 --port %(ENV_CLAUDE_INTERNAL_PORT)s --reload
 directory=/workspace
 autostart=true
 autorestart=true
-stderr_logfile=/var/log/uvicorn.err.log
-stdout_logfile=/var/log/uvicorn.out.log
+stderr_logfile=./logs/uvicorn.err.log
+stdout_logfile=./logs/uvicorn.out.log
+stderr_logfile_maxbytes=10MB
+stdout_logfile_maxbytes=10MB
+stderr_logfile_backups=5
+stdout_logfile_backups=5
 environment=PATH="/workspace/.venv/bin:%(ENV_PATH)s"
 user=claude
 ```
 
-- **IMPORTANT**: Create `run_server.py` script that:
-  - Initializes the database if needed
-  - Starts supervisor to manage uvicorn process
-  - Provides easy control commands (start/stop/restart)
-  - Shows process status and logs
+- **IMPORTANT**: Use supervisor directly for all server management:
+  - Always use supervisord and supervisorctl commands
+  - Initialize database manually when needed
+  - Use supervisor for robust process control
+  - Access logs through ./logs directory
 
-```python
-# Example run_server.py structure
-#!/usr/bin/env python3
-"""
-Development server script with supervisor management
-Usage: python run_server.py [start|stop|restart|status|logs]
-"""
-import os
-import subprocess
-import sys
-from pathlib import Path
+```bash
+# Server management commands (use these instead of run_server.py)
 
-def manage_server(action="start"):
-    """Manage uvicorn server via supervisor"""
-    # Ensure .venv is activated
-    # Load environment variables
-    # Initialize database if needed
-    # Control supervisor process
-    # Handle start/stop/restart/status commands
-    # Show logs when requested
+# Start supervisor daemon
+mkdir -p logs
+supervisord -c supervisord.conf
+
+# Control uvicorn process
+supervisorctl -c supervisord.conf start uvicorn
+supervisorctl -c supervisord.conf stop uvicorn
+supervisorctl -c supervisord.conf restart uvicorn
+supervisorctl -c supervisord.conf status
+
+# View logs
+tail -f ./logs/uvicorn.out.log
+tail -f ./logs/uvicorn.err.log
+tail -f ./logs/supervisord.log
+
+# Stop supervisor daemon
+supervisorctl -c supervisord.conf shutdown
 ```
 
-### 9. **Python Environment & Dependency Management**:
-
-- **VIRTUAL ENVIRONMENT SETUP** (CRITICAL):
-  ```bash
-  python -m venv .venv
-  source .venv/bin/activate  # On Linux/Mac
-  # .venv\Scripts\activate     # On Windows
-  ```
-  
-  **IMPORTANT**: Always activate the virtual environment before installing any packages. Never install project dependencies globally as this can break system packages and cause conflicts.
-
-- **PYPROJECT.TOML CONFIGURATION**: Create comprehensive pyproject.toml:
-  ```toml
-  [build-system]
-  requires = ["setuptools>=45", "wheel"]
-  build-backend = "setuptools.build_meta"
-
-  [project]
-  name = "unified-management"
-  version = "1.0.0"
-  description = "Unified Management Application"
-  dependencies = [
-      "fastapi>=0.100.0",
-      "sqlalchemy>=2.0.0",
-      "psycopg2-binary",
-      "uvicorn[standard]",
-      "pydantic>=2.0.0",
-      "pydantic-settings",
-      "python-jose[cryptography]",
-      "passlib[bcrypt]",
-      "python-multipart",
-      "jinja2",
-      "python-dotenv",
-      "email-validator",
-      "supervisor"
-  ]
-
-  [project.optional-dependencies]
-  dev = [
-      "ruff",
-      "pytest",
-      "pytest-asyncio"
-  ]
-
-  [tool.ruff]
-  line-length = 88
-  target-version = "py311"
-  ```
-
-- **INSTALLATION COMMANDS**:
-  ```bash
-  pip install -e .
-  pip install -e .[dev]  # For development dependencies
-  ```
-
-### 10. **Configuration Management**:
+### 9. **Configuration Management**:
 
 - Create both .env.example and .env files
 - Handle environment variable parsing properly (especially lists)
@@ -346,7 +296,7 @@ def manage_server(action="start"):
 - Set appropriate defaults for development
 - **PORT CONFIGURATION**: Use CLAUDE_INTERNAL_PORT environment variable for uvicorn binding
 
-### 11. **API Endpoints Specification**:
+### 10. **API Endpoints Specification**:
 
 **HTML Routes (in `routers/html.py`):**
 
@@ -417,7 +367,7 @@ GET|DELETE /api/v1/sessions   # List/Delete sessions (admin only)
 GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 ```
 
-### 12. **Professional UI Design & Branding**:
+### 11. **Professional UI Design & Branding**:
 
 - **Bootstrap Integration**: Use Bootstrap 5.3+ for professional, enterprise-grade design:
   - Modern card-based layouts for data presentation
@@ -442,7 +392,7 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
   - Search and filter capabilities with clean UI
   - Professional table styling with sorting indicators
 
-### 13. **Documentation**:
+### 12. **Documentation**:
 
 - Create comprehensive tech specs document including:
   - Complete database schema with SQL examples
@@ -457,7 +407,7 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 - Include example .env file with all required variables
 - Document default user accounts and permissions
 
-### 14. **Testing & Validation**:
+### 13. **Testing & Validation**:
 
 - **MUST INCLUDE**: After implementation, test the following:
   - Database connection and table creation
@@ -471,9 +421,8 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 - Provide curl commands for testing API endpoints for all models
 - Verify HTML interface functionality for all implemented features
 
-### 15. **Common Pitfalls to Avoid**:
+### 14. **Common Pitfalls to Avoid**:
 
-- **Virtual Environment**: Always activate .venv before installing dependencies - never install packages globally as this breaks system packages
 - **SQLAlchemy Relationships**: Always use explicit foreign_keys to avoid circular references
 - **FastAPI Middleware**: Use dependency injection instead of custom middleware for authentication
 - **Form Handling**: Use `await request.form()` and `getlist()` for complex forms
@@ -488,7 +437,7 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 - **Database Creation**: Ensure database exists before running migrations
 - **Session Security**: Use proper session validation and cleanup
 
-### 16. **Delivery Requirements**:
+### 15. **Delivery Requirements**:
 
 - Complete working "Unified" application with professional Bootstrap UI and database initialized
 - All endpoints tested and functional for all models (users, roles, permissions, sessions)
@@ -500,9 +449,7 @@ GET|DELETE /api/v1/sessions/{id} # Get/Delete session (admin only)
 - Permission system fully operational with professional navigation menu
 - **Mobile Responsive**: All interfaces work seamlessly on desktop, tablet, and mobile devices
 - Clear documentation of how to run and test the application
-- **Python Environment**: Properly configured .venv virtual environment with all dependencies installed via pyproject.toml
-- **Modern Dependency Management**: Complete pyproject.toml configuration with production and development dependencies
-- **Development script** (`run_server.py`) with supervisor management for robust server control
+- **Supervisor management** for robust server control with direct supervisord/supervisorctl commands
 - **Supervisor configuration** (`supervisord.conf`) for process management and auto-reload
 - **API versioning** properly implemented with `/api/v1/` prefix
 - **Idiomatic FastAPI structure** following community standards
@@ -542,7 +489,6 @@ Keep implementation focused on core functionality, avoiding test suites or mocks
 
 ## Key Improvements in Version 6:
 
-- **Modern Python Project Structure**: Uses .venv virtual environment and pyproject.toml for dependency management
 - **Professional "Unified" Branding**: Complete brand identity with professional logo, colors, and typography
 - **Bootstrap 5.3+ Integration**: Modern, responsive UI framework for enterprise-grade appearance
 - **Polished User Experience**: Professional forms, navigation, notifications, and mobile responsiveness
@@ -554,8 +500,7 @@ Keep implementation focused on core functionality, avoiding test suites or mocks
 - **Enhanced maintainability** through proper layering and module organization
 - **Better scalability** with clear boundaries between components
 - **Industry standard patterns** making it easier for new developers to contribute
-- **Supervisor Integration**: Uses supervisor for robust process management with auto-reload
-- **Development Script**: Enhanced `run_server.py` with supervisor control and process management
+- **Supervisor Integration**: Direct supervisor commands for process management and auto-reload
 - **Professional Static Assets**: Custom CSS, JavaScript, and branding assets for polished appearance
 
 This prompt incorporates all lessons learned from previous implementations plus FastAPI community best practices and professional UI/UX design for maximum usability, maintainability, and visual appeal.
