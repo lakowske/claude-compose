@@ -13,6 +13,7 @@ Create a docker compose file that includes:
 - Install Node.js LTS and npm via NodeSource repository
 - Install claude code: `npm install -g @anthropic-ai/claude-code`
 - Install Python tools: `pip3 install --break-system-packages uv ruff`
+- Install Flyway: Download and install Flyway Community Edition from https://flywaydb.org/download/community
 - Create user "claude" with home directory
 - Add claude user to sudo group with NOPASSWD access: `echo 'claude ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers`
 - Create directory /workspace owned by claude:claude
